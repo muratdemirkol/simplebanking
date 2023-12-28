@@ -1,107 +1,83 @@
-# Getting Started with Simple Banking (Estimated duration 1-3 hours)
+# DATABASE Bilgileri
+PostgreSQL DB kullanılmıştır. DB Create Scripti Aşağıdaki gibidir. 
 
-In this assignment you will build a banking service that can handle any number of transactions for bank accounts. The service is part of a larger collection of services that model the inner workings of a bank. The services for the "bank account" provide a simple model of how bank accounts might work in an overly simplified world.
+    -- Database: banksystem
 
-For this assignment, the bank account is exclusively interested in maintaining the name of the account owner, the number of the account and the account’s balance. The endpoints will be limited to methods that provide a means of crediting and debiting the account. 
+    -- DROP DATABASE IF EXISTS banksystem;
+    
+    CREATE DATABASE banksystem
+    WITH
+    OWNER = postgres
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'Turkish_T�rkiye.1254'
+    LC_CTYPE = 'Turkish_T�rkiye.1254'
+    LOCALE_PROVIDER = 'libc'
+    TABLESPACE = pg_default
+    CONNECTION LIMIT = -1
+    IS_TEMPLATE = False;
 
-Your data model for the bank account object must have fields owner where the field type is java.lang.String, fields to hold the account number (String) and balance (double). the credit() service as specified above adds the supplied amount to the receiving BankAccounts balance and the the debit() service subtracts the supplied amount from the receiving BankAccounts balance.  
+Database oluşturulduktan sonra application.properties dosyası içerisinde gerekli olan alanların (username, password gb.) doldurulması gerekmektedir.
 
-The object model for our banking system must include transaction objects. A transaction object keeps track of the kind of transaction (deposit, withdrawal, payments etc.) as well as the date and amount of the transaction. Each transaction type will require its own parameters. The following diagram shows how BankAccounts and Transactions are related. An instance of DepositTransaction represents a deposit; a WithdrawalTransaction represents a withdrawal (the triangle on the diagram indicates inheritance). Inheritance for the PhoneBillPaymentTransaction, CheckTransaction etc. is not shown - you must decide where to put this class.  All transactions must have  have the fields date and amount at a minimum. The date field should contain the time of the transaction and should be automatically calculated.
+Database ayarları yapıldıktan sonra Uygulama çalışınca otomatik olarak Entity Tabloları da oluşacaktır. Case dahilinde Account create olmadığı için Account manuel ekleme gerekecektir. 
+Manuel Account ekleme Scripti aşağıdaki gibidir. 
 
-![model](images/model.png)
+İnsert Account Scripti.
 
-## You can use provided project template as a start
-The template project (gradle Java) is available under the src folder.  We recommend that you use Quarkus or Spring(boot), Junit, JPA as the primary choices for your implementation.
+    INSERT INTO public.account(
+    account_number, balance, create_date, owner)
+    VALUES ('cdc2a404-a4ff-11ee-bbfb-0f9b5d259d17',	1000, now(),'Murat Demirkol');
+    
+# POSTMAN Bilgileri
+# GET Account  
 
-## Task 1: Implement and test the model
-These transaction objects will be used both to make financial requests of a BankAccount and to keep a record of those requests. The following Unit test segment indicates how transactions will be used on the service side:
+    curl --location 'localhost:8080/account/cdc2a404-a4ff-11ee-bbfb-0f9b5d259d17'
 
-    BankAccount account = new BankAccount("Jim", 12345);
-    account.post(new DepositTransaction(1000));
-    account.post(new WithdrawalTransaction(200));
-    account.post(new PhoneBillPaymentTransaction("Vodafone", "5423345566", 96.50));
-    assertEquals(account.getBalance(), 703.50, 0.0001)
+    Response
+    
+    {
+    "accountNumber": "cdc2a404-a4ff-11ee-bbfb-0f9b5d259d17",
+    "owner": "Murat Demirkol",
+    "balance": 60.0,
+    "createDate": "2023-12-28T00:35:07.073383"
+    }
 
-### BONUS Task 1: Find a better implementation alternative
-The bank account post method must do something special for each Transaction type. e.g. post(DepositTransaction) and post(WithdrawalTransaction. This solution will work but creating families of overloaded methods is discouraged as it causes problems with maintenance. Consider, if we added more Transaction subclasses we would need to keep changing the BankAccount class, overloading even more post methods. It is considered bad form in OO  to write case statements based on the type of objects. It also has the same maintenance problems as the first solution. Adding more Transaction subclasses would require changes. Find a solution to delegate the operation using polymorphism so that the Bank account is never changed by introducing new transaction types. At a öinimum you shoudl make the provided uni test to run:
-
-
-## Task 2:  Provide a REST API using Spring Rest Controllers and TEST
-Provide a REST API to the banking system as follows. The following code demonstrates how BankAccounts might be used.  Use services and repositories to persist your model above into a Database using JPA.  Please provide tests (MOCK or othrewise) for your code:
-
-To deposit money into an account, one would use:
-
-    curl --location --request POST 'http://localhost:8080/account/v1/credit/669-7788' \
+# POST Credit
+    curl --location 'localhost:8080/account/credit/cdc2a404-a4ff-11ee-bbfb-0f9b5d259d17' \
     --header 'Content-Type: application/json' \
-    --header 'Accept: application/json' \
-    --data-raw '    {
-            "amount": 1000.0
-        }'
+    --data '{
+    "amount":"15"
+    }'
 
-    response would be (200):
+    Response
+
     {
-        "status": "OK",
-        "approvalCode": "67f1aada-637d-4469-a650-3fb6352527ba"
+    "status": "200 OK",
+    "approvalCode": "53523ffb-1db2-4722-be18-7f16db550218"
     }
-
-To withdraw money:
-
-    curl --location --request POST 'http://localhost:8080/account/v1/debit/669-7788' \
+    
+# POST Debit
+    curl --location 'localhost:8080/account/debit/cdc2a404-a4ff-11ee-bbfb-0f9b5d259d17' \
     --header 'Content-Type: application/json' \
-    --header 'Accept: application/json' \
-    --data-raw '    {
-            "amount": 50.0
-        }'
-
-    response would be (200):
+    --data '{
+    "amount":"2"
+    }'
+    
+    Response
+    
     {
-        "status": "OK",
-        "approvalCode": "a66cce54-335b-4e46-9b49-05017c4b38dd"
+    "status": "200 OK",
+    "approvalCode": "607568f5-2998-4c86-be10-05cd63461b10"
     }
-
-To get the current account data, one would use:
-
-    curl --location --request GET 'http://localhost:8080/account/v1/669-7788'
-
-    response would be:
-
+# POST Pay Bill
+    curl --location 'localhost:8080/account/billPayment/vadafone/5449141361/cdc2a404-a4ff-11ee-bbfb-0f9b5d259d17' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "amount":"13"
+    }'
+    
+    Response
+    
     {
-        "accountNumber": "669-7788",
-        "owner": "Kerem Karaca",
-        "balance": 950.0,
-        "createDate": "2020-03-26T06:15:50.550+0000",
-        "transactions": [
-            {
-                "date": "2020-03-26T06:16:03.563+0000",
-                "amount": 1000.0,
-                "type": "DepositTransaction",
-                "approvalCode": "67f1aada-637d-4469-a650-3fb6352527ba"
-            },
-            {
-                "date": "2020-03-26T06:16:35.047+0000",
-                "amount": 50.0,
-                "type": "WithdrawalTransaction",
-                "approvalCode": "a66cce54-335b-4e46-9b49-05017c4b38dd"
-            }
-        ]
+    "status": "200 OK",
+    "approvalCode": "6d3e4018-e775-4123-8216-dd9f02ce98df"
     }
-
-
-## Reference Documentation
-For further reference, please consider the following sections:
-
-* [Official Gradle documentation](https://docs.gradle.org)
-* [Spring Boot Gradle Plugin Reference Guide](https://docs.spring.io/spring-boot/docs/2.2.5.RELEASE/gradle-plugin/reference/html/)
-* [Spring Boot DevTools](https://docs.spring.io/spring-boot/docs/2.2.5.RELEASE/reference/htmlsingle/#using-boot-devtools)
-
-### Guides
-The following guides illustrate how to use some features concretely:
-
-* [Building REST services with Spring](https://spring.io/guides/tutorials/bookmarks/)
-
-### Additional Links
-These additional references should also help you:
-* [Gradle Build Scans – insights for your project's build](https://scans.gradle.com#gradle)
-
-
-
