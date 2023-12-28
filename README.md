@@ -1,3 +1,5 @@
+### Proje Assigment Bilgileri README-ASSIGMENT İçerisinde Bulabilirsiniz.
+
 # DATABASE Bilgileri
 PostgreSQL DB kullanılmıştır. DB Create Scripti Aşağıdaki gibidir. 
 
